@@ -1,13 +1,24 @@
 package com.example.drgnflyengine;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.camera.core.Camera;
+import androidx.camera.core.CameraSelector;
+import androidx.camera.core.Preview;
+import androidx.camera.lifecycle.ProcessCameraProvider;
+import androidx.camera.view.PreviewView;
+import androidx.core.content.ContextCompat;
+import androidx.lifecycle.LifecycleOwner;
 
 import android.os.Bundle;
-import android.widget.TextView;
 
 import com.example.drgnflyengine.databinding.ActivityMainBinding;
+import com.google.common.util.concurrent.ListenableFuture;
+
+import java.util.concurrent.ExecutionException;
 
 public class MainActivity extends AppCompatActivity {
+    private ListenableFuture<ProcessCameraProvider> cameraProviderFuture;
 
     // Used to load the 'drgnflyengine' library on application startup.
     static {
@@ -23,9 +34,29 @@ public class MainActivity extends AppCompatActivity {
         binding = ActivityMainBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
-        // Example of a call to a native method
-        TextView tv = binding.sampleText;
-        tv.setText(stringFromJNI());
+        cameraProviderFuture = ProcessCameraProvider.getInstance(this);
+
+        cameraProviderFuture.addListener(() -> {
+            try {
+                ProcessCameraProvider cameraProvider = cameraProviderFuture.get();
+                bindPreview(cameraProvider);
+            } catch (ExecutionException | InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+        }, ContextCompat.getMainExecutor(this));
+    }
+
+    void bindPreview(@NonNull ProcessCameraProvider cameraProvider) {
+        Preview preview = new Preview.Builder().build();
+
+        CameraSelector cameraSelector = new CameraSelector.Builder().requireLensFacing(CameraSelector.LENS_FACING_BACK).build();
+
+        preview.setSurfaceProvider(binding.previewView.getSurfaceProvider());
+
+        Camera camera = cameraProvider.bindToLifecycle((LifecycleOwner) this, cameraSelector, preview);
+
+        binding.previewView.setImplementationMode(PreviewView.ImplementationMode.PERFORMANCE);
+        binding.previewView.setScaleType(PreviewView.ScaleType.FIT_CENTER);
     }
 
     /**
