@@ -16,6 +16,7 @@ import android.Manifest;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.WindowManager;
 
 import com.example.drgnflyengine.databinding.ActivityMainBinding;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -57,6 +58,8 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void startCamera() {
+
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         cameraProviderFuture = ProcessCameraProvider.getInstance(this);
 
         cameraProviderFuture.addListener(() -> {
