@@ -83,6 +83,8 @@ public class MainActivity extends AppCompatActivity {
 
         Camera camera = cameraProvider.bindToLifecycle((LifecycleOwner) this, cameraSelector, preview);
 
+        camera.getCameraControl().setLinearZoom(0.0f);
+
         binding.previewView.setImplementationMode(PreviewView.ImplementationMode.PERFORMANCE);
         binding.previewView.setScaleType(PreviewView.ScaleType.FIT_CENTER);
     }
