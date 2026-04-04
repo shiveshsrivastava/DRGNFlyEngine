@@ -21,7 +21,6 @@ import android.view.WindowManager;
 import com.example.drgnflyengine.databinding.ActivityMainBinding;
 import com.google.common.util.concurrent.ListenableFuture;
 
-import java.util.Objects;
 import java.util.concurrent.ExecutionException;
 
 public class MainActivity extends AppCompatActivity {
@@ -71,8 +70,6 @@ public class MainActivity extends AppCompatActivity {
                 throw new RuntimeException(e);
             }
         }, ContextCompat.getMainExecutor(this));
-
-
     }
 
     void bindPreview(@NonNull ProcessCameraProvider cameraProvider) {
