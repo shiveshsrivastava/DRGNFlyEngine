@@ -6,7 +6,11 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.camera.core.Camera;
 import androidx.camera.core.CameraSelector;
+import androidx.camera.core.ImageAnalysis;
+import androidx.camera.core.ImageProxy;
 import androidx.camera.core.Preview;
+import androidx.camera.core.resolutionselector.ResolutionSelector;
+import androidx.camera.core.resolutionselector.ResolutionStrategy;
 import androidx.camera.lifecycle.ProcessCameraProvider;
 import androidx.camera.view.PreviewView;
 import androidx.core.content.ContextCompat;
@@ -16,15 +20,26 @@ import android.Manifest;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.util.Log;
+import android.util.Size;
 import android.view.WindowManager;
 
 import com.example.drgnflyengine.databinding.ActivityMainBinding;
 import com.google.common.util.concurrent.ListenableFuture;
 
+import java.nio.ByteBuffer;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class MainActivity extends AppCompatActivity {
     private ListenableFuture<ProcessCameraProvider> cameraProviderFuture;
+
+    private ExecutorService executorSingleThread = Executors.newSingleThreadExecutor();
+
+    private static final int TARGET_WIDTH = 1280;
+
+    private static final int TARGET_HEIGHT = 720;
 
     private final ActivityResultLauncher<String> requestPermissionLauncher =
             registerForActivityResult(new ActivityResultContracts.RequestPermission(), isGranted -> {
@@ -57,6 +72,32 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+
+    @Override
+    protected void onDestroy() {
+        executorSingleThread.shutdown();
+        super.onDestroy();
+    }
+
+    private ImageAnalysis analyzeImages() {
+        ResolutionSelector resolutionSelector =
+                new ResolutionSelector.Builder().setResolutionStrategy(
+                        new ResolutionStrategy(
+                                new Size(TARGET_WIDTH, TARGET_HEIGHT), ResolutionStrategy.FALLBACK_RULE_CLOSEST_HIGHER)).build();
+
+        ImageAnalysis imageAnalysis =
+                new ImageAnalysis.Builder().setResolutionSelector(resolutionSelector).setBackpressureStrategy(
+                        ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST).build();
+
+        //Passing image width and height dynamically, as it can change because of our FALLBACK_RULE_CLOSEST_HIGHER resolution strategy
+        imageAnalysis.setAnalyzer(executorSingleThread, image -> {
+            processFrames(image.getPlanes()[0].getBuffer(), image.getWidth(), image.getHeight());
+            image.close();
+        });
+
+        return imageAnalysis;
+    }
+
     private void startCamera() {
 
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
@@ -81,7 +122,9 @@ public class MainActivity extends AppCompatActivity {
 
         preview.setSurfaceProvider(binding.previewView.getSurfaceProvider());
 
-        Camera camera = cameraProvider.bindToLifecycle((LifecycleOwner) this, cameraSelector, preview);
+        ImageAnalysis imageAnalysis = analyzeImages();
+
+        Camera camera = cameraProvider.bindToLifecycle((LifecycleOwner) this, cameraSelector, preview, imageAnalysis);
 
         camera.getCameraControl().setLinearZoom(0.0f);
 
@@ -94,4 +137,6 @@ public class MainActivity extends AppCompatActivity {
      * which is packaged with this application.
      */
     public native String stringFromJNI();
+
+    private native void processFrames(ByteBuffer pixelData, int width, int height);
 }
