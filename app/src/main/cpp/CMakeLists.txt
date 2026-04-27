@@ -14,6 +14,20 @@ project("drgnflyengine")
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+# OpenCV dependency management
+
+include(FetchContent)
+set(OPENCV_VERSION "4.12.0")
+
+FetchContent_Declare(
+    opencv_android_sdk
+    URL "https://github.com/opencv/opencv/releases/download/${OPENCV_VERSION}/opencv-${OPENCV_VERSION}-android-sdk.zip"
+)
+
+FetchContent_MakeAvailable(opencv_android_sdk)
+set(OpenCV_DIR "${opencv_android_sdk_SOURCE_DIR}/sdk/native/jni")
+find_package(OpenCV REQUIRED)
+
 # Creates and names a library, sets it as either STATIC
 # or SHARED, and provides the relative paths to its source code.
 # You can define multiple libraries, and CMake builds them for you.
@@ -37,4 +51,5 @@ add_library(${CMAKE_PROJECT_NAME} SHARED
 target_link_libraries(${CMAKE_PROJECT_NAME}
     # List libraries link to the target library
     android
-    log)
+    log
+    ${OpenCV_LIBS})
