@@ -3,6 +3,7 @@ package com.example.drgnflyengine;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
+import androidx.annotation.OptIn;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.camera.core.Camera;
 import androidx.camera.core.CameraSelector;
@@ -13,12 +14,14 @@ import androidx.camera.core.resolutionselector.ResolutionSelector;
 import androidx.camera.core.resolutionselector.ResolutionStrategy;
 import androidx.camera.lifecycle.ProcessCameraProvider;
 import androidx.camera.view.PreviewView;
+import androidx.camera.view.TransformExperimental;
 import androidx.core.content.ContextCompat;
 import androidx.lifecycle.LifecycleOwner;
 
 import android.Manifest;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
+import android.graphics.Matrix;
 import android.os.Bundle;
 import android.util.Log;
 import android.util.Size;
@@ -78,6 +81,7 @@ public class MainActivity extends AppCompatActivity {
         super.onDestroy();
     }
 
+    @OptIn(markerClass = TransformExperimental.class)
     private ImageAnalysis analyzeImages() {
 
         ResolutionSelector resolutionSelector = new ResolutionSelector.Builder()
@@ -86,8 +90,10 @@ public class MainActivity extends AppCompatActivity {
                 .build();
 
         ImageAnalysis imageAnalysis =
-                new ImageAnalysis.Builder().setResolutionSelector(resolutionSelector).setBackpressureStrategy(
-                        ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST).build();
+                new ImageAnalysis.Builder()
+                        .setResolutionSelector(resolutionSelector)
+                        .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
+                        .setOutputImageFormat(ImageAnalysis.OUTPUT_IMAGE_FORMAT_YUV_420_888).build();
 
         //Passing image width and height dynamically, as it can change because of our FALLBACK_RULE_CLOSEST_HIGHER resolution strategy
         imageAnalysis.setAnalyzer(executorSingleThread, image -> {
@@ -96,14 +102,35 @@ public class MainActivity extends AppCompatActivity {
             if (overlayBitmap == null ||
                     overlayBitmap.getWidth() != image.getWidth() ||
                     overlayBitmap.getHeight() != image.getHeight()) {
-                overlayBitmap = Bitmap.createBitmap(image.getHeight(), image.getWidth(), Bitmap.Config.ARGB_8888);
+                overlayBitmap = Bitmap.createBitmap(image.getWidth(), image.getHeight(), Bitmap.Config.ARGB_8888);
                 Log.i("DRGNFLY_JAVA", "Glass manufactured at: " + image.getHeight() + "x"  + image.getWidth());
             }
 
             processFrames(image.getPlanes()[0].getBuffer(), overlayBitmap, image.getWidth(), image.getHeight());
 
             runOnUiThread(() -> {
-                binding.overlayImageView.setImageBitmap(overlayBitmap);
+                int viewWidth = binding.previewView.getWidth();
+                int viewHeight = binding.previewView.getHeight();
+
+                if (viewWidth > 0 && viewHeight > 0) {
+
+                    binding.overlayImageView.setImageBitmap(overlayBitmap);
+                    Matrix matrix = new Matrix();
+
+                    matrix.postTranslate(-overlayBitmap.getWidth() / 2f, -overlayBitmap.getHeight() / 2f);
+                    matrix.postRotate(90);
+
+                    float rotationWidth = overlayBitmap.getHeight();
+                    float rotationHeight = overlayBitmap.getWidth();
+
+                    float scale = Math.min((float) viewWidth / rotationWidth, (float) viewHeight / rotationHeight);
+                    matrix.postScale(scale, scale);
+
+                    matrix.postTranslate(viewWidth / 2f, viewHeight / 2f);
+
+                    binding.overlayImageView.setImageMatrix(matrix);
+                }
+
                 binding.overlayImageView.invalidate();
             });
 

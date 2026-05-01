@@ -24,7 +24,7 @@ Java_com_example_drgnflyengine_MainActivity_processFrames(JNIEnv *env, jobject t
     auto* pixel_buffer_address = static_cast<uint8_t *>(env->GetDirectBufferAddress(pixel_data));
     Mat raw_gray(height, width, CV_8UC1, pixel_buffer_address);
 
-    rotate(raw_gray, raw_gray, ROTATE_90_CLOCKWISE);
+    //rotate(raw_gray, raw_gray, ROTATE_90_CLOCKWISE);
 
     //temp log to make sure pixel data is reaching here
     __android_log_print(ANDROID_LOG_INFO, "DRGNFLY_C++", "Image width: %d, Image height: %d", width, height);
@@ -39,7 +39,7 @@ Java_com_example_drgnflyengine_MainActivity_processFrames(JNIEnv *env, jobject t
 
 
     // If Java hands us the wrong sized glass, abort immediately to prevent a SIGSEGV
-    if (info.height != width || info.width != height) {
+    if (info.width != width || info.height != height) {
         __android_log_print(ANDROID_LOG_ERROR, "DRGNFLY_C++",
                             "CRASH AVERTED: Camera is %dx%d but Java Bitmap is %dx%d!",
                             height, width, info.height, info.width);
@@ -54,7 +54,7 @@ Java_com_example_drgnflyengine_MainActivity_processFrames(JNIEnv *env, jobject t
     }
 
     // Wiping and writing on the glass (overlay)
-    Mat overlay_mat(width, height, CV_8UC4, bitmap_pixels);
+    Mat overlay_mat(height, width, CV_8UC4, bitmap_pixels);
     overlay_mat.setTo(Scalar(0, 0, 0, 0));
     overlay_mat.setTo(Scalar(0, 255, 0, 255), canny_img);
 
