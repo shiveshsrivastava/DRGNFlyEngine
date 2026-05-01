@@ -52,4 +52,5 @@ target_link_libraries(${CMAKE_PROJECT_NAME}
     # List libraries link to the target library
     android
     log
-    ${OpenCV_LIBS})
+    ${OpenCV_LIBS}
+    jnigraphics)

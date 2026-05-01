@@ -18,6 +18,7 @@ import androidx.lifecycle.LifecycleOwner;
 
 import android.Manifest;
 import android.content.pm.PackageManager;
+import android.graphics.Bitmap;
 import android.os.Bundle;
 import android.util.Log;
 import android.util.Size;
@@ -37,9 +38,7 @@ public class MainActivity extends AppCompatActivity {
 
     private ExecutorService executorSingleThread = Executors.newSingleThreadExecutor();
 
-    private static final int TARGET_WIDTH = 1280;
-
-    private static final int TARGET_HEIGHT = 720;
+    private Bitmap overlayBitmap;
 
     private final ActivityResultLauncher<String> requestPermissionLauncher =
             registerForActivityResult(new ActivityResultContracts.RequestPermission(), isGranted -> {
@@ -80,10 +79,11 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private ImageAnalysis analyzeImages() {
-        ResolutionSelector resolutionSelector =
-                new ResolutionSelector.Builder().setResolutionStrategy(
-                        new ResolutionStrategy(
-                                new Size(TARGET_WIDTH, TARGET_HEIGHT), ResolutionStrategy.FALLBACK_RULE_CLOSEST_HIGHER)).build();
+
+        ResolutionSelector resolutionSelector = new ResolutionSelector.Builder()
+                .setResolutionStrategy(new ResolutionStrategy(
+                        new Size(1280, 960), ResolutionStrategy.FALLBACK_RULE_CLOSEST_HIGHER))
+                .build();
 
         ImageAnalysis imageAnalysis =
                 new ImageAnalysis.Builder().setResolutionSelector(resolutionSelector).setBackpressureStrategy(
@@ -91,7 +91,22 @@ public class MainActivity extends AppCompatActivity {
 
         //Passing image width and height dynamically, as it can change because of our FALLBACK_RULE_CLOSEST_HIGHER resolution strategy
         imageAnalysis.setAnalyzer(executorSingleThread, image -> {
-            processFrames(image.getPlanes()[0].getBuffer(), image.getWidth(), image.getHeight());
+
+            // Figure out the overlay size dynamically
+            if (overlayBitmap == null ||
+                    overlayBitmap.getWidth() != image.getWidth() ||
+                    overlayBitmap.getHeight() != image.getHeight()) {
+                overlayBitmap = Bitmap.createBitmap(image.getHeight(), image.getWidth(), Bitmap.Config.ARGB_8888);
+                Log.i("DRGNFLY_JAVA", "Glass manufactured at: " + image.getHeight() + "x"  + image.getWidth());
+            }
+
+            processFrames(image.getPlanes()[0].getBuffer(), overlayBitmap, image.getWidth(), image.getHeight());
+
+            runOnUiThread(() -> {
+                binding.overlayImageView.setImageBitmap(overlayBitmap);
+                binding.overlayImageView.invalidate();
+            });
+
             image.close();
         });
 
@@ -138,5 +153,5 @@ public class MainActivity extends AppCompatActivity {
      */
     public native String stringFromJNI();
 
-    private native void processFrames(ByteBuffer pixelData, int width, int height);
+    private native void processFrames(ByteBuffer pixelData, Bitmap overlayBitmap, int width, int height);
 }
