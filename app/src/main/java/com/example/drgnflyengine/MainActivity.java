@@ -86,7 +86,7 @@ public class MainActivity extends AppCompatActivity {
 
         ResolutionSelector resolutionSelector = new ResolutionSelector.Builder()
                 .setResolutionStrategy(new ResolutionStrategy(
-                        new Size(640, 480), ResolutionStrategy.FALLBACK_RULE_CLOSEST_HIGHER))
+                        new Size(1920, 1080), ResolutionStrategy.FALLBACK_RULE_CLOSEST_HIGHER))
                 .build();
 
         ImageAnalysis imageAnalysis =

@@ -23,6 +23,7 @@ Java_com_example_drgnflyengine_MainActivity_processFrames(JNIEnv *env, jobject t
     //Pointer to the address where pixels are dumped by the camera
     auto* pixel_buffer_address = static_cast<uint8_t *>(env->GetDirectBufferAddress(pixel_data));
     Mat raw_gray(height, width, CV_8UC1, pixel_buffer_address);
+    Mat frame = raw_gray.clone();
 
     //rotate(raw_gray, raw_gray, ROTATE_90_CLOCKWISE);
 
@@ -31,7 +32,7 @@ Java_com_example_drgnflyengine_MainActivity_processFrames(JNIEnv *env, jobject t
 
     // Testing Java UI overlay with canny edge detection
     Mat blur_img, canny_img;
-    GaussianBlur(raw_gray, blur_img, Size(5, 5), 0, 0);
+    GaussianBlur(frame, blur_img, Size(5, 5), 0, 0);
     Canny(blur_img, canny_img, 50, 150);
 
     AndroidBitmapInfo info;
