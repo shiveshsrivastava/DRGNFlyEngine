@@ -1,9 +1,9 @@
-#include <jni.h>
-#include <string>
 #include <android/bitmap.h>
 #include <android/log.h>
+#include <jni.h>
 #include <opencv2/core.hpp>
 #include <opencv2/imgproc.hpp>
+#include <string>
 
 using namespace cv;
 
@@ -61,5 +61,17 @@ Java_com_example_drgnflyengine_MainActivity_processFrames(JNIEnv *env, jobject t
 
     AndroidBitmap_unlockPixels(env, overlay_bitmap);
 
-    // TODO: implement processFrames() ML logic
+  // TODO: implement processFrames() ML logic
+  int crop_height = width / 5;
+  int y_start = height - crop_height;
+
+  if (y_start >= 0 && width >= 1600) {
+
+    Rect roi(0, y_start, width, crop_height);
+
+    Mat cropped_road = frame(roi);
+
+    Mat model_input;
+    resize(cropped_road, model_input, Size(1600, 320));
+  }
 }
