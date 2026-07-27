@@ -8,7 +8,6 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.camera.core.Camera;
 import androidx.camera.core.CameraSelector;
 import androidx.camera.core.ImageAnalysis;
-import androidx.camera.core.ImageProxy;
 import androidx.camera.core.Preview;
 import androidx.camera.core.resolutionselector.ResolutionSelector;
 import androidx.camera.core.resolutionselector.ResolutionStrategy;
@@ -20,6 +19,7 @@ import androidx.lifecycle.LifecycleOwner;
 
 import android.Manifest;
 import android.content.pm.PackageManager;
+import android.content.res.AssetManager;
 import android.graphics.Bitmap;
 import android.graphics.Matrix;
 import android.os.Bundle;
@@ -32,7 +32,6 @@ import com.google.common.util.concurrent.ListenableFuture;
 
 import java.nio.ByteBuffer;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -106,7 +105,7 @@ public class MainActivity extends AppCompatActivity {
                 Log.i("DRGNFLY_JAVA", "Glass manufactured at: " + image.getHeight() + "x"  + image.getWidth());
             }
 
-            processFrames(image.getPlanes()[0].getBuffer(), overlayBitmap, image.getWidth(), image.getHeight());
+            processFrames(image.getPlanes()[0].getBuffer(), overlayBitmap, image.getWidth(), image.getHeight(), getAssets());
 
             runOnUiThread(() -> {
                 int viewWidth = binding.previewView.getWidth();
@@ -180,5 +179,5 @@ public class MainActivity extends AppCompatActivity {
      */
     public native String stringFromJNI();
 
-    private native void processFrames(ByteBuffer pixelData, Bitmap overlayBitmap, int width, int height);
+    private native void processFrames(ByteBuffer pixelData, Bitmap overlayBitmap, int width, int height, AssetManager assetManager);
 }

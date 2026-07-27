@@ -25,6 +25,17 @@ FetchContent_Declare(
 )
 
 FetchContent_MakeAvailable(opencv_android_sdk)
+
+FetchContent_Declare(
+    tensorflow
+    GIT_REPOSITORY https://github.com/tensorflow/tensorflow.git
+    GIT_TAG v2.16.1
+    SOURCE_SUBDIR tensorflow/lite
+)
+
+fetchcontent_makeavailable(tensorflow)
+
+
 set(OpenCV_DIR "${opencv_android_sdk_SOURCE_DIR}/sdk/native/jni")
 find_package(OpenCV REQUIRED)
 
@@ -53,4 +64,5 @@ target_link_libraries(${CMAKE_PROJECT_NAME}
     android
     log
     ${OpenCV_LIBS}
-    jnigraphics)
+    jnigraphics
+    tensorflow-lite)
