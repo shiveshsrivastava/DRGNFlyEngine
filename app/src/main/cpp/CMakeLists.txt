@@ -26,15 +26,16 @@ FetchContent_Declare(
 
 FetchContent_MakeAvailable(opencv_android_sdk)
 
-FetchContent_Declare(
-    tensorflow
-    GIT_REPOSITORY https://github.com/tensorflow/tensorflow.git
-    GIT_TAG v2.16.1
-    SOURCE_SUBDIR tensorflow/lite
-)
+set(LITERT_CC_SDK "${CMAKE_CURRENT_SOURCE_DIR}/../../../litert_cc_sdk/litert_cc_sdk")
+set(LITERT_SO "${CMAKE_CURRENT_SOURCE_DIR}/../jniLibs/${ANDROID_ABI}/libLiteRt.so")
+if (NOT EXISTS "${LITERT_SO}")
+    message(FATAL_ERROR
+        "libLiteRt.so missing at ${LITERT_SO} -- extract jni/${ANDROID_ABI}/libLiteRt.so "
+        "from the LiteRT AAR (dl.google.com/dl/android/maven2/com/google/ai/edge/litert/litert/2.1.6/litert-2.1.6.aar)")
+endif()
+file(COPY "${LITERT_SO}" DESTINATION "${LITERT_CC_SDK}")
 
-fetchcontent_makeavailable(tensorflow)
-
+add_subdirectory("${LITERT_CC_SDK}" "${CMAKE_BINARY_DIR}/litert_cc_sdk")
 
 set(OpenCV_DIR "${opencv_android_sdk_SOURCE_DIR}/sdk/native/jni")
 find_package(OpenCV REQUIRED)
@@ -65,4 +66,4 @@ target_link_libraries(${CMAKE_PROJECT_NAME}
     log
     ${OpenCV_LIBS}
     jnigraphics
-    tensorflow-lite)
+    litert_cc_api)
