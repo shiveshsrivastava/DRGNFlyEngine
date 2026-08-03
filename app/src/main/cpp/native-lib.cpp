@@ -4,8 +4,12 @@
 #include <opencv2/core.hpp>
 #include <opencv2/imgproc.hpp>
 #include <string>
+#include <android/asset_manager.h>
+#include <android/asset_manager_jni.h>
 
 using namespace cv;
+
+static bool is_model_initialized = false;
 
 extern "C" JNIEXPORT jstring JNICALL
 Java_com_example_drgnflyengine_MainActivity_stringFromJNI(
@@ -17,8 +21,11 @@ Java_com_example_drgnflyengine_MainActivity_stringFromJNI(
 extern "C"
 JNIEXPORT void JNICALL
 Java_com_example_drgnflyengine_MainActivity_processFrames(JNIEnv *env, jobject thiz,
-                                                          jobject pixel_data, jobject overlay_bitmap, jint width,
-                                                          jint height) {
+                                                          jobject pixel_data,
+                                                          jobject overlay_bitmap,
+                                                          jint width,
+                                                          jint height,
+                                                          jobject asset_manager_obj) {
 
     //Pointer to the address where pixels are dumped by the camera
     auto* pixel_buffer_address = static_cast<uint8_t *>(env->GetDirectBufferAddress(pixel_data));
@@ -50,7 +57,8 @@ Java_com_example_drgnflyengine_MainActivity_processFrames(JNIEnv *env, jobject t
     // Locking Bitmap in RAM
     void* bitmap_pixels = nullptr;
     if (AndroidBitmap_lockPixels(env, overlay_bitmap, &bitmap_pixels) < 0) {
-        __android_log_print(ANDROID_LOG_ERROR, "DRGNFLY_C++", "Failed to lock Bitmap pixels.");
+        __android_log_print(ANDROID_LOG_ERROR,
+                            "DRGNFLY_C++", "Failed to lock Bitmap pixels.");
         return;
     }
 

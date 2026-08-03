@@ -18,9 +18,16 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        // The LiteRT prebuilt ships arm64-v8a, armeabi-v7a and x86_64 only (no 32-bit x86).
+        ndk {
+            abiFilters += "arm64-v8a"
+        }
+
         externalNativeBuild {
             cmake {
                 cppFlags += "-std=c++20"
+                targets ("drgnflyengine")
             }
         }
     }
