@@ -23,6 +23,7 @@ import android.content.res.AssetManager;
 import android.graphics.Bitmap;
 import android.graphics.Matrix;
 import android.os.Bundle;
+import android.os.Process;
 import android.util.Log;
 import android.util.Size;
 import android.view.WindowManager;
@@ -38,7 +39,13 @@ import java.util.concurrent.Executors;
 public class MainActivity extends AppCompatActivity {
     private ListenableFuture<ProcessCameraProvider> cameraProviderFuture;
 
-    private ExecutorService executorSingleThread = Executors.newSingleThreadExecutor();
+    private ExecutorService executorSingleThread = Executors.newSingleThreadExecutor(r -> 
+        new Thread(() -> {
+            Process.setThreadPriority(
+                Process.THREAD_PRIORITY_DISPLAY);
+            r.run();
+        }, "DrgnFlyAnalyzer")
+    );
 
     private Bitmap overlayBitmap;
 
@@ -65,6 +72,9 @@ public class MainActivity extends AppCompatActivity {
 
         binding = ActivityMainBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
+        boolean modelReady = initModel(getAssets());
+        Log.i("DRGNFLY_JAVA", "initModel returned: " + modelReady);
+
         if (ContextCompat.checkSelfPermission(
                 this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
             startCamera();
@@ -92,7 +102,7 @@ public class MainActivity extends AppCompatActivity {
                 new ImageAnalysis.Builder()
                         .setResolutionSelector(resolutionSelector)
                         .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
-                        .setOutputImageFormat(ImageAnalysis.OUTPUT_IMAGE_FORMAT_YUV_420_888).build();
+                        .setOutputImageFormat(ImageAnalysis.OUTPUT_IMAGE_FORMAT_RGBA_8888).build();
 
         //Passing image width and height dynamically, as it can change because of our FALLBACK_RULE_CLOSEST_HIGHER resolution strategy
         imageAnalysis.setAnalyzer(executorSingleThread, image -> {
@@ -105,7 +115,10 @@ public class MainActivity extends AppCompatActivity {
                 Log.i("DRGNFLY_JAVA", "Glass manufactured at: " + image.getHeight() + "x"  + image.getWidth());
             }
 
-            processFrames(image.getPlanes()[0].getBuffer(), overlayBitmap, image.getWidth(), image.getHeight(), getAssets());
+            processFrames(image.getPlanes()[0].getBuffer(), overlayBitmap,
+              image.getWidth(), image.getHeight(),
+              image.getPlanes()[0].getRowStride());
+
 
             runOnUiThread(() -> {
                 int viewWidth = binding.previewView.getWidth();
@@ -117,10 +130,11 @@ public class MainActivity extends AppCompatActivity {
                     Matrix matrix = new Matrix();
 
                     matrix.postTranslate(-overlayBitmap.getWidth() / 2f, -overlayBitmap.getHeight() / 2f);
-                    matrix.postRotate(90);
+                    //matrix.postRotate(90);
 
-                    float rotationWidth = overlayBitmap.getHeight();
-                    float rotationHeight = overlayBitmap.getWidth();
+                    float rotationWidth = overlayBitmap.getWidth();
+                    float rotationHeight = overlayBitmap.getHeight();
+
 
                     float scale = Math.min((float) viewWidth / rotationWidth, (float) viewHeight / rotationHeight);
                     matrix.postScale(scale, scale);
@@ -167,7 +181,7 @@ public class MainActivity extends AppCompatActivity {
 
         Camera camera = cameraProvider.bindToLifecycle((LifecycleOwner) this, cameraSelector, preview, imageAnalysis);
 
-        camera.getCameraControl().setLinearZoom(0.0f);
+        camera.getCameraControl().setZoomRatio(1.0f);
 
         binding.previewView.setImplementationMode(PreviewView.ImplementationMode.PERFORMANCE);
         binding.previewView.setScaleType(PreviewView.ScaleType.FIT_CENTER);
@@ -179,5 +193,8 @@ public class MainActivity extends AppCompatActivity {
      */
     public native String stringFromJNI();
 
-    private native void processFrames(ByteBuffer pixelData, Bitmap overlayBitmap, int width, int height, AssetManager assetManager);
+    private native void processFrames(ByteBuffer pixelData, Bitmap overlayBitmap, 
+        int width, int height, int rowStride);
+
+    private native boolean initModel(AssetManager assetManager);
 }
