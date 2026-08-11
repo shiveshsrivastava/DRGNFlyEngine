@@ -221,6 +221,11 @@ Also planned:
 - Full integer quantization, which would let the model run on the Tensor NPU
 - A lower-resolution version of the model, which would need about a quarter of the compute
 
+## Acknowledgements
+
+Built with help from [Claude Code](https://claude.com/claude-code), used for debugging,
+performance work, and drafting this README.
+
 ## License
 
 The UFLDv2 architecture and the CULane weights come with their own licenses.
